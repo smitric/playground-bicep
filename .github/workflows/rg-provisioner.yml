@@ -61,6 +61,7 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@v3
+        timeout-minutes: 5
 
       - name: Run Bicep Build
         run: |

@@ -12,7 +12,7 @@
 # Authenticate with Azure PowerShell using MSI.
 # Remove this if you are not planning on using MSI or Azure PowerShell.
 
-# $playgroundSubscription = "41e50375-b926-4bc4-9045-348f359cf721"
+# $playgroundSubscription = "717f701d-a8d2-4255-ab08-d943cc8e8914"
 
 $playgroundSubscription = "Azure Playground"
 
