@@ -1,0 +1,152 @@
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - ResourceGroupProvisioner/**
+      - .github/workflows/resource-group-provisioner.yml
+  pull_request:
+    branches:
+      - main
+
+env:
+  region: "westeurope"
+  releaseBundlePath: "release-bundle"
+  functionAppName: "resource-group-provisioner"
+  bicepFilePath: "./ResourceGroupProvisioner/main.bicep"
+  functionAppPackagePath: "ResourceGroupProvisioner/src"
+  functionAppRoleAddScrip: "ResourceGroupProvisioner/adRoleAssignmentToFunction.ps1"
+
+name: Resource Group Provisioner Actions
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: "Validate bicep files"
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Bicep linter
+        run: az bicep build --file $bicepFilePath
+
+      - uses: azure/login@v1
+        name: Run azure login
+        with:
+          creds: ${{ secrets.AZURE_RESOURCE_POLICY_CONTRIBUTOR }}
+
+      - name: Set subscription
+        run: az account set --subscription "Devoteam Production"
+
+      - uses: azure/arm-deploy@v1
+        name: Run validation
+        with:
+          scope: subscription
+          region: ${{ env.region }}
+          template: ${{ env.bicepFilePath }}
+          deploymentMode: Validate
+          deploymentName: rg-provisioner-deployment-${{ github.run_number }}
+
+      - uses: azure/arm-deploy@v1
+        name: Run plan
+        with:
+          scope: subscription
+          region: ${{ env.region }}
+          template: ${{ env.bicepFilePath }}
+          deploymentName: rg-provisioner-deployment-${{ github.run_number }}
+          additionalArguments: --what-if
+
+  artifact_generation:
+    runs-on: ubuntu-latest
+    name: "Generate artificts"
+    if: github.ref_name == 'main'
+    needs: validate
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Bicep Build
+        run: |
+          for bicepFile in ${{ env.functionAppPackagePath }}/*/*.bicep ;
+          do
+              az bicep build --file "$bicepFile"
+          done;
+      - name: Copy files to release bundle
+        shell: bash
+        run: |
+          pushd './${{ env.functionAppPackagePath }}'
+          rsync -av --prune-empty-dirs --exclude-from .funcignore ./ ${{ env.releaseBundlePath }}
+          popd
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: function_artifact
+          path: "${{ env.functionAppPackagePath }}/${{ env.releaseBundlePath }}"
+
+  provision_function:
+    runs-on: ubuntu-latest
+    name: "Provision Function"
+    if: github.ref_name == 'main'
+    needs: [validate, artifact_generation]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: azure/login@v1
+        name: Run azure login
+        with:
+          creds: ${{ secrets.AZURE_RESOURCE_POLICY_CONTRIBUTOR }}
+
+      - name: Set subscription
+        run: az account set --subscription "Devoteam Production"
+
+      - uses: azure/arm-deploy@v1
+        name: Run deploy
+        id: deploy_bicep
+        with:
+          scope: subscription
+          region: ${{ env.region }}
+          template: ${{ env.bicepFilePath }}
+          deploymentName: rg-provisioner-deployment-${{ github.run_number }}
+
+      - name: Add AD roles and app roles to the function
+        run: |
+          ./${{ env.functionAppRoleAddScrip }} -FunctionAppPrincipalId ${{ steps.deploy_bicep.outputs.functionAppPrincipalId }}
+        shell: pwsh
+
+  deploy_function:
+    runs-on: ubuntu-latest
+    name: "Deploy Function"
+    if: github.ref_name == 'main'
+    needs: provision_function
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: azure/login@v1
+        name: Run azure login
+        with:
+          creds: ${{ secrets.AZURE_RESOURCE_POLICY_CONTRIBUTOR }}
+
+      - name: Set subscription
+        run: az account set --subscription "Devoteam Production"
+
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v3
+        with:
+          name: function_artifact
+          path: ./artifacts
+
+      - name: Run Bicep Build
+        run: |
+          for bicepFile in ${{ env.functionAppPackagePath }}/*/*.bicep ; 
+          do
+              az bicep build --file "$bicepFile"
+          done;
+      - name: Copy files to release bundle
+        shell: bash
+        run: |
+          pushd './${{ env.functionAppPackagePath }}'
+          rsync -av --prune-empty-dirs --exclude-from .funcignore ./ ${{ env.releaseBundlePath }}
+          popd
+      - name: Deploy function package
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.functionAppName }}
+          package: "./artifacts"
+          publish-profile: ${{ secrets.RESOURCE_GROUP_PROVISIONER_PUBLISH_PROFILE }}
