@@ -20,7 +20,7 @@ function ValidateAndDeleteResourceGroup {
 
     $authHeader = $auth.token
 
-    $deleteBudgetUrl = "https://management.azure.com/subscriptions/41e50375-b926-4bc4-9045-348f359cf721/resourceGroups/$rgName/providers/Microsoft.Consumption/budgets/budgetAlerts?api-version=2023-03-01"
+    $deleteBudgetUrl = "https://management.azure.com/subscriptions/717f701d-a8d2-4255-ab08-d943cc8e8914/resourceGroups/$rgName/providers/Microsoft.Consumption/budgets/budgetAlerts?api-version=2023-03-01"
 
     Invoke-WebRequest $deleteBudgetUrl -Method Delete -Headers @{"Authorization" = "Bearer $authHeader" }
 

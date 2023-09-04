@@ -1,7 +1,7 @@
 targetScope = 'subscription'
 
 @description('Playgroud Subscription Id')
-param playgroudSubscriptionId string = '41e50375-b926-4bc4-9045-348f359cf721'
+param playgroudSubscriptionId string = '717f701d-a8d2-4255-ab08-d943cc8e8914'
 
 @description('Resource group name where the function will be created.')
 param rgName string = 'pers-admin-rg'
