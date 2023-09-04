@@ -17,7 +17,7 @@ env:
   functionAppPackagePath: "ResourceGroupProvisioner/src"
   functionAppRoleAddScrip: "ResourceGroupProvisioner/adRoleAssignmentToFunction.ps1"
 
-name: Resource Group Provisioner Actions
+name: Resource Group Provisioner Actions - Test
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -34,7 +34,7 @@ jobs:
           creds: ${{ secrets.AZURE_RESOURCE_POLICY_CONTRIBUTOR }}
 
       - name: Set subscription
-        run: az account set --subscription "Devoteam Production"
+        run: az account set --subscription "Pay-As-You-Go"
 
       - uses: azure/arm-deploy@v1
         name: Run validation
@@ -61,7 +61,7 @@ jobs:
     needs: validate
     steps:
       - uses: actions/checkout@v3
-        timeout-minutes: 60
+        timeout-minutes: 5
 
       - name: Run Bicep Build
         run: |
