@@ -30,4 +30,4 @@ az deployment sub create `
 az role assignment create `
     --role "Owner" `
     --assignee-object-id "$objectId" `
-    --scope "/subscriptions/41e50375-b926-4bc4-9045-348f359cf721/resourceGroups/$resourceGroupName"
+    --scope "/subscriptions/717f701d-a8d2-4255-ab08-d943cc8e8914/resourceGroups/$resourceGroupName"
