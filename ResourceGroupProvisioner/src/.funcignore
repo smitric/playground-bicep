@@ -1,0 +1,5 @@
+.gitignore
+local.settings.json
+readme.md
+.funcignore
+*.bicep

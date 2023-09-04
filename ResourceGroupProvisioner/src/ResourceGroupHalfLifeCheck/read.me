@@ -1,0 +1,11 @@
+This Azure function app is written in Powershell.
+It checks the half life of the Resource Group of users within the Playground subscription.
+The RGs are set to be no older than 30 days and thus the half life is 15 days.
+
+The Azure function will trigger every day at 06:00 AM morning 
+
+
+# How to set up the gmail smtp server including password needed for credentials
+# https://techexpert.tips/powershell/powershell-send-email-gmail/
+
+# Next step is to fix automated Get-Credential instead of user prompt: https://learn.microsoft.com/en-us/azure/automation/shared-resources/credentials?tabs=azure-powershell

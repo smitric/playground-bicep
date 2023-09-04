@@ -1,0 +1,131 @@
+{
+  "mode": "All",
+  "policyRule": {
+    "if": {
+      "allOf": [
+        {
+          "field": "type",
+          "equals": "Microsoft.Resources/subscriptions/resourceGroups"
+        },
+        {
+          "anyOf": [
+            {
+              "field": "[concat('tags[', parameters('tagUnit'), ']')]",
+              "exists": "false"
+            },
+            {
+              "not": {
+                "field": "[concat('tags[', parameters('tagUnit'), ']')]",
+                "in": "[parameters('allowedUnits')]"
+              }
+            }
+          ]
+        },
+        {
+            "anyOf": [
+              {
+                "field": "[concat('tags[', parameters('tagUsage'), ']')]",
+                "exists": "false"
+              },
+              {
+                "not": {
+                  "field": "[concat('tags[', parameters('tagUsage'), ']')]",
+                  "in": "[parameters('allowedUsage')]"
+                }
+              }
+            ]
+        },
+        {
+            "anyOf": [
+              {
+                "field": "[concat('tags[', parameters('tagFuture'), ']')]",
+                "exists": "false"
+              },
+              {
+                "not": {
+                  "field": "[concat('tags[', parameters('tagFuture'), ']')]",
+                  "in": "[parameters('AllowedFuture')]"
+                }
+              }
+            ]
+        }
+      ]
+    },
+    "then": {
+      "effect": "deny"
+    }
+  },
+  "parameters": {
+    "tagUnit": {
+      "type": "String",
+      "metadata": {
+        "displayName": "Tag Unit",
+        "description": "Name of the tag, such as 'Unit'"
+      }
+    },
+    "allowedUnits": {
+      "type": "Array",
+      "metadata": {
+        "displayName": "Allowed Units",
+        "description": "The list of value that can be specified when deploying resources"
+      },
+      "allowedValues": [
+        "M Cloud",
+        "S Platform",
+        "Innovative Tech",
+        "Public Consulting",
+        "Digital Impulse"
+      ],
+      "defaultValue": [
+        "M Cloud"
+      ]
+    },
+    "tagUsage": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Tag Usage",
+          "description": "Name of the Usage, such as 'Client related activities'"
+        }
+      },
+      "allowedUsage": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Units",
+          "description": "The list of value that can be specified when deploying resources"
+        },
+        "allowedValues": [
+          "Client related activities",
+          "Devoteam related activities",
+          "Training Or Certification related activities",
+          "Other"
+        ],
+        "defaultValue": [
+          "Client related activities"
+        ]
+      },
+      "tagFuture": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Tag Future",
+          "description": "Name of the Future, such as 'Devops'"
+        }
+      },
+      "AllowedFuture": {
+        "type": "Array",
+        "metadata": {
+          "displayName": "Allowed Future Trainee",
+          "description": "The list of value that can be specified when deploying resources"
+        },
+        "allowedValues": [
+          "DevOps",
+          "Data",
+          "Integration",
+          "Software Engineering"
+        ],
+        "defaultValue": [
+          "DevOps"
+        ]
+      }
+
+  }
+}
