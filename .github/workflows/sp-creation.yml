@@ -1,0 +1,61 @@
+name: App & Service principal creation
+run-name: App & Service principal creation - ${{ inputs.service_principal_name }} by @${{ github.actor }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      service_principal_name:
+        type: string
+        description: "App & Service principal name"
+        required: true
+      repository_name:
+        type: string
+        description: "Repository name without DevoteamNL/. Leave empty for non-federated environment"
+      federation_environment:
+        type: string
+        description: "Federation GitHub environment name. Leave empty for non-federated environment"
+
+permissions:
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  create-app-sp:
+    name: "Create App & Service principal"
+    runs-on: ubuntu-latest
+    environment: #{INPUT ENVIRONMENT}
+    steps:
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - name: Create App & Service principal
+        id: create-app-sp
+        run: |
+          app_client_id=$(az ad app create --display-name ${{ inputs.service_principal_name }} | jq -r '.appId')
+
+          az ad sp create --id $app_client_id
+
+          echo "app_client_id=$app_client_id" >> $GITHUB_OUTPUT
+
+      - name: Create federation with GitHub
+        if: ${{ inputs.federation_environment != '' }}
+        run: |
+          echo "{" > credential.json
+          echo "    \"name\": \"${{ inputs.service_principal_name }}-federation\"," >> credential.json
+          echo "    \"issuer\": \"https://token.actions.githubusercontent.com\"," >> credential.json
+          echo "    \"subject\": \"repo:DevoteamNL/${{ inputs.repository_name}:environment:${{ inputs.federation_environment }}\"," >> credential.json
+          echo "    \"description\": \"Federation with GitHub\"," >> credential.json
+          echo "    \"audiences\": [" >> credential.json
+          echo "        \"api://AzureADTokenExchange\"" >> credential.json
+          echo "    ]" >> credential.json
+          echo "}" >> credential.json
+
+          az ad app federated-credential create --id ${{ steps.create-app-sp.outputs.app_client_id }} --parameters credential.json
